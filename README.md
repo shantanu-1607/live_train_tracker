@@ -1,29 +1,43 @@
 # 🇮🇳 Indian Rail Live Tracker
 
-A Streamlit app for tracking Indian Railways trains in real time — live running status, PNR status, seat availability, and route schedules, all in one dashboard.
+A FastAPI backend for tracking Indian Railways trains — live running status, PNR status, seat availability, and route schedules, backed by a Postgres database for telemetry history.
 
 ## Features
 
-- 📍 **Live Status** — look up a train by number to see its current station, delay, and type (via [RailRadar](https://railradar.in))
-- 🎫 **PNR Status** — check booking/confirmation status for a 10-digit PNR
-- 💺 **Seat Availability** — check seat availability for a train/class/route/date
-- 📅 **Schedule** — view a train's full route and stop list
+- 📍 **Live Status** — look up a train by number to see its current station, delay, and type (via [RailRadar](https://railradar.in)); each lookup is logged to Postgres as telemetry
+- 🎫 **PNR Status** — check booking/confirmation status for a PNR
+- ❤️ **Health Check** — verifies API and database connectivity
 
-> **Note:** PNR, seat availability, and schedule lookups currently return sample/dummy data — live data for these features depends on a configured RapidAPI (IRCTC) key and is not yet fully wired up.
+> **Note:** PNR, seat availability, and schedule lookups currently return sample/dummy data — live data for these features depends on a configured RapidAPI (IRCTC) key and is not yet fully wired up. Seat availability and schedule lookups also aren't exposed as routes yet.
 
 ## Tech Stack
 
-- [Streamlit](https://streamlit.io/) — UI
-- [Requests](https://docs.python-requests.org/) — HTTP client for the RailRadar API
-- [python-dotenv](https://pypi.org/project/python-dotenv/) — environment variable loading
+- [FastAPI](https://fastapi.tiangolo.com/) — web framework
+- [SQLAlchemy](https://www.sqlalchemy.org/) (async) + [asyncpg](https://github.com/MagicStack/asyncpg) — Postgres access
+- [Alembic](https://alembic.sqlalchemy.org/) — database migrations
+- [httpx](https://www.python-httpx.org/) — async HTTP client for the RailRadar/RapidAPI APIs
+- [Pydantic](https://docs.pydantic.dev/) — request/response schemas and settings
 
 ## Project Structure
 
 ```
 .
-├── main.py     # Streamlit UI (tabs for live status, PNR, seats, schedule)
-├── api.py      # RailClient — wraps calls to RailRadar / RapidAPI
-├── models.py   # Train, PNR, SeatAvailability, TrainSchedule data classes
+├── app/
+│   ├── main.py                # FastAPI app entrypoint, lifespan, router registration
+│   ├── core/
+│   │   └── config.py          # Settings loaded from .env (API keys, DB/Redis URLs)
+│   ├── db/
+│   │   ├── database.py        # Async SQLAlchemy engine/session
+│   │   └── models.py          # ORM models (TrainTelemetry)
+│   ├── schemas/
+│   │   └── train.py           # Pydantic response models
+│   ├── services/
+│   │   └── rail_client.py     # RailClient — wraps calls to RailRadar / RapidAPI
+│   └── api/routes/
+│       ├── trains.py          # GET /trains/{train_no}
+│       ├── pnr.py              # GET /pnr/{pnr_no}
+│       └── health.py           # GET /health
+├── alembic/                    # Database migrations
 └── requirements.txt
 ```
 
@@ -46,25 +60,34 @@ A Streamlit app for tracking Indian Railways trains in real time — live runnin
    ```env
    RAILRADAR_KEY=your_railradar_api_key
    RAPIDAPI_KEY=your_rapidapi_key
+   DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/train_tracker
+   REDIS_URL=redis://localhost:6379
    ```
 
    - `RAILRADAR_KEY` — API key from [RailRadar](https://railradar.in) (powers live train status)
    - `RAPIDAPI_KEY` — API key for the [IRCTC API on RapidAPI](https://rapidapi.com/) (powers PNR/seats/schedule once wired up). Set this to a value containing `dummy` to use sample data for PNR and seat lookups.
+   - `DATABASE_URL` — async Postgres connection string
+   - `REDIS_URL` — reserved for future caching use (not yet used)
 
-3. **Run the app**
+3. **Run database migrations**
 
    ```bash
-   streamlit run main.py
+   alembic upgrade head
    ```
 
-   The app will open at `http://localhost:8501`.
+4. **Run the app**
+
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+   The API will be available at `http://localhost:8000`, with interactive docs at `http://localhost:8000/docs`.
 
 ## Usage
 
-1. Open the **Live Status** tab and enter a train number (e.g. `12222`) to fetch its current location and delay.
-2. Open the **Check PNR** tab and enter a 10-digit PNR to see its confirmation status.
-3. Open the **Seats** tab to check seat availability for a class, route, and date.
-4. Open the **Schedule** tab to view a train's stop-by-stop route.
+1. `GET /trains/{train_no}` — fetch a train's current location, delay, and status (e.g. `/trains/12222`). Each call is recorded in the `train_telemetry` table.
+2. `GET /pnr/{pnr_no}` — check a PNR's confirmation status.
+3. `GET /health` — check API and database connectivity.
 
 ## License
 
