@@ -5,16 +5,18 @@ from app.schemas.train import TrainResponse, PNRResponse, SeatAvailabilityRespon
 
 class RailClient:
     def __init__(self):
-        self.radar_url = "https://api.railradar.in/api/v1"
+        self.radar_url = "https://api.railradar.in/v1"
         self.rapid_url = "https://irctc1.p.rapidapi.com/api/v1"
 
     async def get_live_status(self, train_no: str) -> TrainResponse | None:
-        url = f"{self.radar_url}/trains/{train_no}"
-        headers = {"X-API-Key": settings.RAILRADAR_KEY}
+        url = f"{self.radar_url}/trains/{train_no}/live"
+        headers = {"Authorization": f"Bearer {settings.RAILRADAR_KEY}"}
 
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(url, headers=headers)
+            print(f"[DEBUG] RailRadar status: {response.status_code}")
+            print(f"[DEBUG] RailRadar body: {response.text}")
             if response.status_code != 200:
                 return None
 
@@ -32,7 +34,8 @@ class RailClient:
                 current_station=curr_loc.get("stationCode", "Station Unknown"),
                 delay=live_data.get("overallDelayMinutes", 0),
             )
-        except Exception:
+        except Exception as e:
+            print(f"[DEBUG] Exception in get_live_status: {type(e).__name__}: {e}")
             return None
 
     async def get_pnr_status(self, pnr_no: str) -> PNRResponse | None:

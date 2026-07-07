@@ -3,6 +3,7 @@ from fastapi import FastAPI
 
 from app.api.routes import trains, pnr, health
 from app.db.database import engine
+from app.db.redis_client import redis_client
 from app.db.models import Base
 
 
@@ -12,6 +13,7 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     yield
     await engine.dispose()
+    await redis_client.aclose()
 
 
 app = FastAPI(title="Live Train Tracker", version="1.0.0", lifespan=lifespan)
