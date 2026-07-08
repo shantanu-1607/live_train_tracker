@@ -14,4 +14,4 @@ class TrainTelemetry(Base):
     train_number: Mapped[str] = mapped_column(String(10), nullable=False)
     station_code: Mapped[str] = mapped_column(String(10), nullable=False)
     delay_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
-    recorded_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone = True), default=lambda: datetime.now(timezone.utc), nullable=False)
