@@ -15,27 +15,24 @@ class RailClient:
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(url, headers=headers)
-            print(f"[DEBUG] RailRadar status: {response.status_code}")
-            print(f"[DEBUG] RailRadar body: {response.text}")
             if response.status_code != 200:
                 return None
 
             data = response.json()
-            t_data = data["data"]["train"]
-            live_data = data["data"].get("liveData", {})
-            curr_loc = live_data.get("currentLocation", {})
+            train_data = data["data"]
+            t_data = train_data["train"]
+            curr_loc = train_data.get("currentLocation", {})
 
             return TrainResponse(
-                number=t_data.get("trainNumber"),
-                name=t_data.get("trainName"),
+                number=t_data.get("number"),
+                name=t_data.get("name"),
                 type=t_data.get("type"),
-                source=t_data.get("sourceStationName"),
-                destination=t_data.get("destinationStationName"),
+                source=t_data.get("source", {}).get("name"),
+                destination=t_data.get("destination", {}).get("name"),
                 current_station=curr_loc.get("stationCode", "Station Unknown"),
-                delay=live_data.get("overallDelayMinutes", 0),
+                delay=train_data.get("delayMinutes", 0),
             )
-        except Exception as e:
-            print(f"[DEBUG] Exception in get_live_status: {type(e).__name__}: {e}")
+        except Exception:
             return None
 
     async def get_pnr_status(self, pnr_no: str) -> PNRResponse | None:
