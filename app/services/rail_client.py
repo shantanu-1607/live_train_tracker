@@ -29,7 +29,7 @@ class RailClient:
                 type=t_data.get("type"),
                 source=t_data.get("source", {}).get("name"),
                 destination=t_data.get("destination", {}).get("name"),
-                current_station=curr_loc.get("stationCode", "Station Unknown"),
+                current_station=curr_loc.get("stationCode", "UNKNOWN"),
                 delay=train_data.get("delayMinutes", 0),
             )
         except Exception:
