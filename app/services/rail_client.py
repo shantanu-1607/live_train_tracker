@@ -1,6 +1,6 @@
 import httpx
 from app.core.config import settings
-from app.schemas.train import TrainResponse, PNRResponse, SeatAvailabilityResponse, TrainScheduleResponse
+from app.schemas.train import TrainResponse, PNRResponse
 
 
 class RailClient:
@@ -45,21 +45,3 @@ class RailClient:
                 status_list=["CNF", "CNF"],
             )
         return None
-
-    async def get_seats(
-        self, train_no: str, src: str, dest: str, date: str, cls: str
-    ) -> SeatAvailabilityResponse | None:
-        if "dummy" in settings.RAPIDAPI_KEY:
-            return SeatAvailabilityResponse(
-                train_number=train_no,
-                source=src,
-                destination=dest,
-                date=date,
-                class_code=cls,
-                availability_status="AVAILABLE-42",
-            )
-        return None
-
-    async def get_schedule(self, train_no: str) -> TrainScheduleResponse:
-        stations = ["Howrah", "Dhanbad", "Gaya", "Prayagraj", "New Delhi"]
-        return TrainScheduleResponse(train_number=train_no, station_list=stations)

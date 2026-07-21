@@ -31,29 +31,3 @@ class PNRResponse(BaseModel):
     @property
     def is_confirmed(self) -> bool:
         return all(s == "CNF" for s in self.status_list)
-
-
-class SeatAvailabilityResponse(BaseModel):
-    train_number: str
-    source: str
-    destination: str
-    date: str
-    class_code: str
-    availability_status: str
-
-
-class TrainScheduleResponse(BaseModel):
-    train_number: str
-    station_list: list[str]
-
-    @computed_field
-    @property
-    def route_summary(self) -> str:
-        if self.station_list:
-            return f"From {self.station_list[0]} to {self.station_list[-1]}"
-        return "Unknown route"
-
-    @computed_field
-    @property
-    def full_schedule(self) -> str:
-        return " -> ".join(self.station_list)
